@@ -39,6 +39,14 @@ if (!$bSuppressSessionTests)  // This is used for the login page only.
 		exit;
 	}
 
+	// Basic security: If $sRootPath has changed we have changed databases without logging in 
+	// redirect to the login page 
+	if ($_SESSION['sRootPath'] !== $sRootPath )
+	{
+		Redirect("Default.php");
+		exit;
+	}
+
 	// Check for login timeout.  If login has expired, redirect to login page
 	if ($sSessionTimeout > 0)
 	{
@@ -64,7 +72,7 @@ if (!$bSuppressSessionTests)  // This is used for the login page only.
     // This prevents someone from accessing via http by typing in the URL 
     if ($bHTTPSOnly)
     {
-        if(!($_SERVER['HTTPS'] == 'on'))
+        if (!isAffirmative($_SERVER['HTTPS']))
         {
             $_SESSION['bSecureServer'] = TRUE;
             Redirect('Default.php');
@@ -92,10 +100,20 @@ if (!$bSuppressSessionTests)  // This is used for the login page only.
 }
 // End of basic security checks
 
+// if magic_quotes off and array
+function addslashes_deep($value)
+{
+    $value = is_array($value) ?
+                array_map('addslashes_deep', $value) :
+                addslashes($value);
+
+    return $value;
+}
+
 // If Magic Quotes is turned off, do the same thing manually..
 if (!$_SESSION['bHasMagicQuotes'])
 {
-	foreach ($_REQUEST as $key=>$value) $value = addslashes($value);
+	foreach ($_REQUEST as $key=>$value) $value = addslashes_deep($value);
 }
 
 // Constants
@@ -1405,7 +1423,9 @@ function validateCustomField($type, &$data, $col_Name, &$aErrors)
 		case 8:
 			if (strlen($data) != 0)
 			{
-				$data = eregi_replace($aLocaleInfo["thousands_sep"], "", $data);  // remove any thousands separators
+				if ($aLocalInfo["thousands_sep"]) {
+					$data = eregi_replace($aLocaleInfo["thousands_sep"], "", $data);  // remove any thousands separators
+				}
 				if (!is_numeric($data))
 				{
 					$aErrors[$col_Name] = gettext("Invalid Number");
@@ -1422,8 +1442,9 @@ function validateCustomField($type, &$data, $col_Name, &$aErrors)
 		// Handler for money amounts
 		case 10:
 			if (strlen($data) != 0)
-			{
-				$data = eregi_replace($aLocaleInfo["mon_thousands_sep"], "", $data);
+			{	if ($aLocaleInfo["mon_thousands_sep"]) {
+					$data = eregi_replace($aLocaleInfo["mon_thousands_sep"], "", $data);
+				}
 				if (!is_numeric($data))
 				{
 					$aErrors[$col_Name] = gettext("Invalid Number");
@@ -1902,6 +1923,87 @@ function checkEmail($email, $domainCheck = false, $verify = false, $return_error
         # 'Old' behaviour, simple to understand
         if(isset($error)) return false; else return true;
     }
+}
+
+function getFamilyList($sDirRoleHead, $sDirRoleSpouse, $classification = 0) {
+
+	if ($classification) {
+		$sSQL = "SELECT fam_ID, fam_Name, fam_Address1, fam_City, fam_State FROM family_fam LEFT JOIN person_per ON fam_ID = per_fam_ID WHERE per_cls_ID='" . $classification . "' ORDER BY fam_Name";
+	} else {
+		$sSQL = "SELECT fam_ID, fam_Name, fam_Address1, fam_City, fam_State FROM family_fam ORDER BY fam_Name";
+	}
+
+	$rsFamilies = RunQuery($sSQL);
+
+	// Build Criteria for Head of Household
+	if (!$sDirRoleHead)
+		$sDirRoleHead = "1";
+	$head_criteria = " per_fmr_ID = " . $sDirRoleHead;
+	// If more than one role assigned to Head of Household, add OR
+	$head_criteria = str_replace(",", " OR per_fmr_ID = ", $head_criteria);
+	// Add Spouse to criteria
+	if (intval($sDirRoleSpouse) > 0)
+		$head_criteria .= " OR per_fmr_ID = $sDirRoleSpouse";
+	// Build array of Head of Households and Spouses with fam_ID as the key
+	$sSQL = "SELECT per_FirstName, per_fam_ID FROM person_per WHERE per_fam_ID > 0 AND (" . $head_criteria . ") ORDER BY per_fam_ID";
+	$rs_head = RunQuery($sSQL);
+	$aHead = "";
+	while (list ($head_firstname, $head_famid) = mysql_fetch_row($rs_head)) {
+		if ($head_firstname && $aHead[$head_famid]) {
+			$aHead[$head_famid] .= " & " . $head_firstname;
+		} elseif ($head_firstname) {
+			$aHead[$head_famid] = $head_firstname;
+		}
+	}
+	$familyArray = array();
+	while ($aRow = mysql_fetch_array($rsFamilies)) {
+		extract($aRow);
+		$name = $fam_Name;
+		if ($aHead[$fam_ID]) {
+			$name .= ", " . $aHead[$fam_ID];
+		}
+		$name .= " " . FormatAddressLine($fam_Address1, $fam_City, $fam_State);
+
+		$familyArray[$fam_ID] = $name;
+	}
+
+	return $familyArray;
+}
+
+function buildFamilySelect($iFamily, $sDirRoleHead, $sDirRoleSpouse) {
+	//Get Families for the drop-down
+	$familyArray = getFamilyList($sDirRoleHead, $sDirRoleSpouse);
+	foreach ($familyArray as $fam_ID => $fam_Data) {
+		$html .= "<option value=\"" . $fam_ID . "\"";
+		if ($iFamily == $fam_ID) {
+			$html .= " selected";
+		}
+		$html .= ">" . $fam_Data;
+	}
+	return $html;
+}
+
+function genGroupKey($methodSpecificID, $famID, $fundIDs, $date) {
+	$uniqueNum = 0;
+	while (1) {
+		$GroupKey = $methodSpecificID . "|" . $uniqueNum . "|" . $famID . "|" . $fundIDs . "|" . $date;
+		$sSQL = "SELECT COUNT(plg_GroupKey) FROM pledge_plg WHERE plg_PledgeOrPayment='Payment' AND plg_GroupKey='" . $GroupKey . "'";
+		$rsResults = RunQuery($sSQL);
+		list($numGroupKeys) = mysql_fetch_row($rsResults);
+		if ($numGroupKeys) {
+			++$uniqueNum;
+		} else {
+			return $GroupKey;
+		}
+	}
+}
+
+function isAffirmative($arg) {
+	if (strtolower($arg) == 'on' or strtolower($arg) == 'yes' or strtolower($arg) == 'true' or $arg == '1') {
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 ?>

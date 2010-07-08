@@ -122,6 +122,11 @@ require "Include/Header.php";
 		</tr>
 
 		<tr>
+			<td class="LabelColumn"><?php echo gettext("Envelope:"); ?></td>
+			<td class="TextColumn"><input type="checkbox" name="Envelope" value="1"></td>
+		</tr>
+
+		<tr>
 			<td class="LabelColumn"><?php echo gettext("Country:"); ?></td>
 			<td class="TextColumn"><input type="checkbox" name="Country" value="1" checked></td>
 		</tr>
@@ -188,7 +193,7 @@ require "Include/Header.php";
 			// Display the custom fields
 			while ($Row = mysql_fetch_array($rsCustomFields)) {
 				extract($Row);
-				if (($aSecurityType[$custom_FieldSec] == 'bAll') or ($_SESSION[$aSecurityType[$custom_FieldSec]]))
+				if (($aSecurityType[$fam_custom_FieldSec] == 'bAll') or ($_SESSION[$aSecurityType[$fam_custom_FieldSec]]))
 				{
 					$currentData = trim($aCustomData[$custom_Field]);
 					echo "<tr><td class=\"LabelColumn\">" . $custom_Name . "</td>";

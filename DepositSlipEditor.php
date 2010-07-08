@@ -36,6 +36,7 @@ if ($iDepositSlipID) {
 	extract(mysql_fetch_array($rsDeposit));
 	// Set current deposit slip
 	$_SESSION['iCurrentDeposit'] = $iDepositSlipID;
+	$_SESSION['idefaultPaymentMethod'] = $dep_method;
 }
 
 //Set the page title
@@ -45,13 +46,13 @@ else
 	$sPageTitle = $dep_Type . " " . gettext("Deposit Slip Number: ") . $iDepositSlipID;
 
 //Is this the second pass?
-if (isset($_POST["DepositSlipSubmit"]))
-{
+if (isset($_POST["DepositSlipSubmit"])) {
 	//Get all the variables from the request object and assign them locally
 	$dDate = FilterInput($_POST["Date"]);
 	$sComment = FilterInput($_POST["Comment"]);
 	$bClosed = FilterInput($_POST["Closed"]);
 	$sDepositType = FilterInput($_POST["DepositType"]);
+
 	if (! $bClosed)
 		$bClosed = 0;
 
@@ -107,8 +108,7 @@ if (isset($_POST["DepositSlipSubmit"]))
 		{
 			if ($linkBack != "") {
 				Redirect($linkBack);
-			} else {
-				//Send to the view of this DepositSlip
+			} else { //Send to the view of this DepositSlip
 				Redirect("DepositSlipEditor.php?linkBack=" . $linkBack . "&DepositSlipID=" . $iDepositSlipID);
 			}
 		}
@@ -121,6 +121,7 @@ if (isset($_POST["DepositSlipSubmit"]))
 	$dDate = FilterInput($_POST["Date"]);
 	$sComment = FilterInput($_POST["Comment"]);
 	$bClosed = FilterInput($_POST["Closed"]);
+	$sDepositType = FilterInput($_POST["DepositType"]);
 	if (! $bClosed)
 		$bClosed = 0;
 
@@ -144,12 +145,15 @@ if (isset($_POST["DepositSlipSubmit"]))
 		} else {
 			$method = "BANKDRAFT";
 		}
+		$dateToday = date ("Y-m-d");
+		
 		$amount = $aut_Amount;
 		$FYID = $aut_FYID;
 		$interval = $aut_Interval;
 		$fund = $aut_Fund;
 		$authDate = $aut_NextPayDate;
-
+		$sGroupKey = genGroupKey($aut_ID, $aut_FamID, $fund, $dateToday);
+		
 		// Check for this automatic payment already loaded into this deposit slip
 		$sSQL = "SELECT plg_plgID FROM pledge_plg WHERE plg_depID=" . $dep_ID . " AND plg_aut_ID=" . $aut_ID;
 		$rsDupPayment = RunQuery ($sSQL);
@@ -157,28 +161,32 @@ if (isset($_POST["DepositSlipSubmit"]))
 
 		if ($amount > 0.00 && $dupCnt == 0) {
 			$sSQL = "INSERT INTO pledge_plg (plg_FamID, 
-														plg_FYID, 
-														plg_date, 
-														plg_amount, 
-														plg_method, 
-														plg_DateLastEdited, 
-														plg_EditedBy, 
-														plg_PledgeOrPayment, 
-														plg_fundID, 
-														plg_depID,
-														plg_aut_ID)
-											VALUES (" .
-														$aut_FamID . "," .
-														$FYID . "," .
-														"'" . date ("Y-m-d") . "'," .
-														$amount . "," .
-														"'" . $method . "'," .
-														"'" . date ("Y-m-d") . "'," .
-														$_SESSION['iUserID'] . "," .
-														"'Payment'," .
-														$fund . "," .
-														$dep_ID . "," .
-														$aut_ID . ")";
+											plg_FYID, 
+											plg_date, 
+											plg_amount, 
+											plg_method, 
+											plg_DateLastEdited, 
+											plg_EditedBy, 
+											plg_PledgeOrPayment, 
+											plg_fundID, 
+											plg_depID,
+											plg_aut_ID,
+											plg_CheckNo,
+											plg_GroupKey)
+								VALUES (" .
+											$aut_FamID . "," .
+											$FYID . "," .
+											"'" . date ("Y-m-d") . "'," .
+											$amount . "," .
+											"'" . $method . "'," .
+											"'" . date ("Y-m-d") . "'," .
+											$_SESSION['iUserID'] . "," .
+											"'Payment'," .
+											$fund . "," .
+											$dep_ID . "," .
+											$aut_ID . "," .
+											$aut_Serial . "," .
+											"'" . $sGroupKey . "')";
 			RunQuery ($sSQL);
 		}
 	}
@@ -302,7 +310,10 @@ if (isset($_POST["DepositSlipSubmit"]))
 		
 		if ($submitSuccess) {
 			// Push the authorized transaction date forward by the interval
-			$sSQL = "UPDATE autopayment_aut SET aut_NextPayDate=DATE_ADD('" . $authDate . "', INTERVAL " . $aut_Interval . " MONTH), aut_Serial=aut_Serial+1 WHERE aut_ID = " . $aut_ID . " AND aut_Amount = " . $plg_amount;
+			$sSQL = "UPDATE autopayment_aut SET aut_NextPayDate=DATE_ADD('" . $authDate . "', INTERVAL " . $aut_Interval . " MONTH) WHERE aut_ID = " . $aut_ID . " AND aut_Amount = " . $plg_amount;
+			RunQuery ($sSQL);
+			// Update the serial number in any case, even if this is not the scheduled payment
+			$sSQL = "UPDATE autopayment_aut SET aut_Serial=aut_Serial+1 WHERE aut_ID = " . $aut_ID;
 			RunQuery ($sSQL);
 		}
 
@@ -381,8 +392,7 @@ if (isset($_POST["DepositSlipSubmit"]))
 
 	//FirstPass
 	//Are we editing or adding?
-	if ($iDepositSlipID)
-	{
+	if ($iDepositSlipID)	{
 		//Editing....
 		//Get all the data on this record
 																		
@@ -393,9 +403,8 @@ if (isset($_POST["DepositSlipSubmit"]))
 		$dDate = $dep_Date;
 		$sComment = $dep_Comment;
 		$bClosed = $dep_Closed;
-	}
-	else
-	{
+		$sDepositType = $dep_Type;
+	} else {
 		//Adding....
 		//Set defaults
 	}
@@ -403,12 +412,12 @@ if (isset($_POST["DepositSlipSubmit"]))
 
 if ($iDepositSlipID) {
 	//Get the payments for this deposit slip
-	$sSQL = "SELECT plg_plgID, plg_date, plg_amount, plg_CheckNo, plg_method, plg_comment, plg_aut_Cleared,
-	         a.fam_Name AS FamilyName, b.fun_Name as fundName, plg_NonDeductible
+	$sSQL = "SELECT plg_plgID, plg_date, plg_FYID, plg_amount, plg_CheckNo, plg_method, plg_comment, plg_aut_Cleared,
+	         a.fam_Name AS FamilyName, b.fun_Name as fundName, plg_NonDeductible, plg_GroupKey
 			 FROM pledge_plg 
 			 LEFT JOIN family_fam a ON plg_FamID = a.fam_ID
 			 LEFT JOIN donationfund_fun b ON plg_fundID = b.fun_ID
-			 WHERE plg_depID = " . $iDepositSlipID . " AND plg_PledgeOrPayment='Payment' ORDER BY pledge_plg.plg_date";
+			 WHERE plg_depID = " . $iDepositSlipID . " AND plg_PledgeOrPayment='Payment' ORDER BY pledge_plg.plg_plgID, pledge_plg.plg_date";
 	$rsPledges = RunQuery($sSQL);
 } else {
 	$rsPledges = 0;
@@ -432,20 +441,23 @@ require "Include/Header.php";
 
 	<tr>
 		<td align="center">
-		<input type="submit" class="icButton" value="<?php echo gettext("Save"); ?>" name="DepositSlipSubmit">
+			<input type="submit" class="icButton" value="<?php echo gettext("Save"); ?>" name="DepositSlipSubmit">
 			<input type="button" class="icButton" value="<?php echo gettext("Cancel"); ?>" name="DepositSlipCancel" onclick="javascript:document.location='<?php if (strlen($linkBack) > 0) { echo $linkBack; } else {echo "Menu.php"; } ?>';">
-			<?php
-				if ($iDepositSlipID && !$dep_Closed)
-					echo "<input type=button class=icButton value=\"".gettext("Add Payment")."\" name=AddPayment onclick=\"javascript:document.location='PledgeEditor.php?CurrentDeposit=$iDepositSlipID&PledgeOrPayment=Payment&linkBack=DepositSlipEditor.php?DepositSlipID=$iDepositSlipID&PledgeOrPayment=Payment&CurrentDeposit=$iDepositSlipID';\">";
-			?>
 			<input type="button" class="icButton" value="<?php echo gettext("Deposit Slip Report"); ?>" name="DepositSlipGeneratePDF" onclick="javascript:document.location='Reports/PrintDeposit.php?BankSlip=<?php echo ($dep_Type == 'Bank')?>';">
 			<input type="button" class="icButton" value="<?php echo gettext("More Reports"); ?>" name="DepositSlipGeneratePDF" onclick="javascript:document.location='FinancialReports.php';">
+			<?php 
+			if ($iDepositSlipID and $sDepositType and !$dep_Closed) {
+				if ($sDepositType == "eGive") {
+					echo "<input type=button class=icButton value=\"".gettext("Import eGive")."\" name=ImporteGive onclick=\"javascript:document.location='eGive.php?DepositSlipID=$iDepositSlipID&linkBack=DepositSlipEditor.php?DepositSlipID=$iDepositSlipID&PledgeOrPayment=Payment&CurrentDeposit=$iDepositSlipID';\">";
+				} else {
+					echo "<input type=button class=icButton value=\"".gettext("Add Payment")."\" name=AddPayment onclick=\"javascript:document.location='PledgeEditor.php?CurrentDeposit=$iDepositSlipID&PledgeOrPayment=Payment&linkBack=DepositSlipEditor.php?DepositSlipID=$iDepositSlipID&PledgeOrPayment=Payment&CurrentDeposit=$iDepositSlipID';\">";
+				} ?>
 
-			<?php if ($dep_Type == 'BankDraft' || $dep_Type == 'CreditCard') { ?>
-			<input type="submit" class="icButton" value="<?php echo gettext("Load Authorized Transactions"); ?>" name="DepositSlipLoadAuthorized">
-			<input type="submit" class="icButton" value="<?php echo gettext("Run Transactions"); ?>" name="DepositSlipRunTransactions">
-			<?php } ?>
-
+				<?php if ($dep_Type == 'BankDraft' || $dep_Type == 'CreditCard') { ?>
+					<input type="submit" class="icButton" value="<?php echo gettext("Load Authorized Transactions"); ?>" name="DepositSlipLoadAuthorized">
+    					<input type="submit" class="icButton" value="<?php echo gettext("Run Transactions"); ?>" name="DepositSlipRunTransactions">
+			    	<?php } ?>
+		    <?php } ?>
 		</td>
 	</tr>
 
@@ -459,24 +471,29 @@ require "Include/Header.php";
 
 			
 			<?php
-			if (!$iDepositSlipID) 
+			if (!$iDepositSlipID or !$sDepositType) 
 			{
 				echo "<tr><td class=LabelColumn>".gettext("Deposit Type:")."</td>";
 				if ($sDepositType == "BankDraft")
-					$select3 = "Checked ";
+					$selectBankDraft = "Checked ";
 				elseif ($sDepositType == "CreditCard")
-					$select2 = "Checked ";
+					$selectCreditCard = "Checked ";
+				elseif ($sDepositType == "eGive")
+					$selecteGive = "Checked ";
 				else
-					$select1 = "Checked ";
-				echo "<td class=TextColumn><input type=radio name=DepositType id=DepositType value=\"Bank\" $select1>".gettext("Bank")." &nbsp; ";
-				echo "<input type=radio name=DepositType id=DepositType value=\"CreditCard\" $select2>".gettext("Credit Card")." &nbsp; ";
-				echo "<input type=radio name=DepositType id=DepositType value=\"BankDraft\" $select3>".gettext("Bank Draft")."</td></td>";
+					$selectOther = "Checked ";
+				echo "<td class=TextColumn><input type=radio name=DepositType id=DepositType value=\"Bank\" $selectOther>".gettext("Bank")." &nbsp; ";
+				echo "<input type=radio name=DepositType id=DepositType value=\"CreditCard\" $selectCreditCard>".gettext("Credit Card")." &nbsp; ";
+				echo "<input type=radio name=DepositType id=DepositType value=\"BankDraft\" $selectBankDraft>".gettext("Bank Draft")." &nbsp; ";
+				echo "<input type=radio name=DepositType id=DepositType value=\"eGive\" $selecteGive>".gettext("eGive")."</td></td>";
+			} else {
+				echo "<input type=hidden name=DepositType id=DepositType value=\"$sDepositType\"></td></td>";
 			}
 			?>
 			
 			<tr>
 				<td class="LabelColumn"><?php echo gettext("Comment:"); ?></td>
-				<td class="TextColumn"><input type="text" name="Comment" id="Comment" value="<?php echo $sComment; ?>"></td>
+				<td class="TextColumn"><input type="text" size=40 name="Comment" id="Comment" value="<?php echo $sComment; ?>"></td>
 			</tr>
 
 			<tr>
@@ -539,6 +556,7 @@ require "Include/Header.php";
 <tr class="TableHeader">
 	<td><?php echo gettext("Family"); ?></td>
 	<td><?php echo gettext("Date"); ?></td>
+	<td><?php echo gettext("Fiscal Year"); ?></td>
 <?php if ($dep_Type == 'Bank') { ?>
 	<td><?php echo gettext("Check #"); ?></td>
 <?php } ?>
@@ -550,8 +568,12 @@ require "Include/Header.php";
 <?php if ($dep_Type == 'BankDraft' || $dep_Type == 'CreditCard') { ?>
 	<td><?php echo gettext("Cleared"); ?></td>
 <?php } ?>
+	<?php if ($dep_Closed) { ?>
+	<td><?php echo gettext("View Detail"); ?></td>
+	<?php } else { ?>
 	<td><?php echo gettext("Edit"); ?></td>
 	<td><?php echo gettext("Delete"); ?></td>
+	<?php } ?>
 <?php if ($dep_Type == 'BankDraft' || $dep_Type == 'CreditCard') { ?>
 	<td><?php echo gettext("Details"); ?></td>
 <?php } ?>
@@ -559,23 +581,52 @@ require "Include/Header.php";
 
 <?php
 
+// Loop through all gifts
+// there can be multiple 'check' records that contain data for a single deposit, due to allowing a single payment to be split to several pledge funds.  We need to therefore collect information from those 'like' records and create a single deposit line from those multiple records.  We'll create a unique key that contains the family name and check number as a map key and build the record into vertical bar separated records.
+// but because we're doing this only for checks, we need to then save the data into a unique 'payment' hash and later unpack the now combined check info into that payment hash.  (there's probably a better way to do this, but this should work for now).
+
+$depositOrder = 1;
+while ($aRow = mysql_fetch_array($rsPledges)) {
+	extract($aRow);
+
+	if ($depositHash and array_key_exists($plg_GroupKey, $depositHash)) {
+		// add/tweak fields so existing key'ed record contains information of new record
+		
+		// we could coherency check checkNo, famID, and date, but we won't since I don't know how we'd surface the error
+		list($e_plg_CheckNo, $e_plg_famID, $e_plg_date, $e_plg_FYID, $e_plg_amount, $e_fundName, $e_plg_comment, $e_plg_aut_Cleared, $e_plg_NonDeductible) = explode("|", $depositHash[$plg_GroupKey]);
+
+		unset($depositHash[$plg_GroupKey]);
+
+		$n_fundName = $e_fundName . "," . $fundName;
+		$n_plg_comment = $e_plg_comment . "," . $plg_comment;
+		$n_amount = $e_plg_amount + $plg_amount;
+		$n_plg_NonDeductible = $e_plg_NonDeductible + $plg_NonDeductible;
+
+		$depositHash[$plg_GroupKey] = $plg_CheckNo . "|" .  $plg_famID . "|" . $plg_date . "|" . $plg_FYID . "|" . $n_amount . "|" . $n_fundName . "|" . $n_plg_comment . "|" . $plg_aut_Cleared . "|" . $n_plg_NonDeductible . "|" . $plg_plgID . "|" . $plg_method . "|" . $FamilyName;
+
+	} else {
+		$depositArray[$depositOrder] = 0;
+		$depositHashOrder2Key[$depositOrder] = $plg_GroupKey;
+		++$depositOrder;
+		$depositHash[$plg_GroupKey] = $plg_CheckNo . "|" .  $plg_famID . "|" . $plg_date . "|" . $plg_FYID . "|" . $plg_amount . "|" . $fundName . "|" . $plg_comment . "|" . $plg_aut_Cleared . "|" . $plg_NonDeductible . "|" . $plg_plgID . "|" . $plg_method . "|" . $FamilyName;
+	}
+}
+
+if ($depositHashOrder2Key) {
+	foreach ($depositHashOrder2Key as $order => $key) {
+		$depositArray[$order] = $key . "%" . $depositHash[$key];
+	}
+}
 
 $tog = 0;
+if ($depositArray) {
+foreach ($depositArray as $order => $value) {
+	// key is: method-specific-id, plg_famID, plg_funID, plg_data
 
-//Loop through all pledges
-while ($aRow =mysql_fetch_array($rsPledges))
-{
+	list($plg_GroupKey, $data) = explode("%", $value);
+	list($plg_CheckNo, $plg_famID, $plg_date, $plg_FYID, $plg_amount, $fundName, $plg_comment, $plg_aut_Cleared, $plg_NonDeductible, $plg_plgID, $plg_method, $FamilyName) = explode("|", $data);
+
 	$tog = (! $tog);
-
-	$plg_date = "";
-	$plg_CheckNo = "";
-	$fundName = "";
-	$plg_amount = "";
-	$plg_method = "";
-	$plg_comment = "";
-	$plg_plgID = 0;
-
-	extract($aRow);
 
 	if ($tog)
 		$sRowClass = "PaymentRowColorA";
@@ -589,6 +640,9 @@ while ($aRow =mysql_fetch_array($rsPledges))
 		</td>
 		<td>
 			<?php echo $plg_date ?>&nbsp;
+		</td>
+		<td>
+			<?php echo MakeFYString ($plg_FYID) ?>&nbsp;
 		</td>
 <?php if ($dep_Type == 'Bank') { ?>
 		<td>
@@ -615,12 +669,18 @@ while ($aRow =mysql_fetch_array($rsPledges))
 			<?php if ($plg_aut_Cleared) echo "Yes"; else echo "No"; ?>&nbsp;
 		</td>
 <?php } ?>
+		<?php if ($dep_Closed) { ?>
 		<td>
-			<a href="PledgeEditor.php?PledgeID=<?php echo $plg_plgID . "&linkBack=DepositSlipEditor.php?DepositSlipID=" . $iDepositSlipID;?>">Edit</a>
+			<a href="PledgeEditor.php?GroupKey=<?php echo $plg_GroupKey . "&linkBack=DepositSlipEditor.php?DepositSlipID=" . $iDepositSlipID;?>">View</a>
+		</td>
+		<?php } else { ?>
+		<td>
+			<a href="PledgeEditor.php?GroupKey=<?php echo $plg_GroupKey . "&linkBack=DepositSlipEditor.php?DepositSlipID=" . $iDepositSlipID;?>">Edit</a>
 		</td>
 		<td>
-			<a href="PledgeDelete.php?PledgeID=<?php echo $plg_plgID . "&linkBack=DepositSlipEditor.php?DepositSlipID=" . $iDepositSlipID;?>">Delete</a>
+			<a href="PledgeDelete.php?GroupKey=<?php echo $plg_GroupKey . "&linkBack=DepositSlipEditor.php?DepositSlipID=" . $iDepositSlipID;?>">Delete</a>
 		</td>
+		<?php } ?>
 <?php if ($dep_Type == 'BankDraft' || $dep_Type == 'CreditCard') { ?>
 		<td>
 			<a href="PledgeDetails.php?PledgeID=<?php echo $plg_plgID . "&linkBack=DepositSlipEditor.php?DepositSlipID=" . $iDepositSlipID;?>">Details</a>
@@ -628,15 +688,15 @@ while ($aRow =mysql_fetch_array($rsPledges))
 <?php } ?>
 	</tr>
 <?php
+}
 } // while
 ?>
 
 </table>
 
 <?php
-} // if (!$iDepositSlipID)
+}
 ?>
-
 
 <?php
 require "Include/Footer.php";

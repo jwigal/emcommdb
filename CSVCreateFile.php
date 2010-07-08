@@ -3,10 +3,10 @@
  *
  *  filename    : CSVCreateFile.php
  *  last change : 2003-06-11
- *  website     : http://www.infocentral.org
- *  copyright   : Copyright 2001-2003 Deane Barker, Chris Gebhardt
+ *  website     : http://www.churchdb.org
+ *  copyright   : Copyright 2001-2003 Deane Barker, Chris Gebhardt, Michael Wilt
  *
- *  InfoCentral is free software; you can redistribute it and/or modify
+ *  ChurchInfo is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
@@ -33,6 +33,11 @@ if ($sFormat == "default")
 	$sSQL = "SELECT * FROM person_custom_master ORDER BY custom_Order";
 	$rsCustomFields = RunQuery($sSQL);
 
+	$sSQL = "SELECT * FROM family_custom_master ORDER BY fam_custom_Order";
+	$rsFamCustomFields = RunQuery($sSQL);
+}
+if ($sFormat == "rollup")
+{
 	$sSQL = "SELECT * FROM family_custom_master ORDER BY fam_custom_Order";
 	$rsFamCustomFields = RunQuery($sSQL);
 }
@@ -286,8 +291,24 @@ else
 		while($aFamRow = mysql_fetch_array($rsFamCustomFields))
 		{
 			extract($aFamRow);
-			if (($aSecurityType[$custom_FieldSec] == 'bAll') or ($_SESSION[$aSecurityType[$custom_FieldSec]]))
-			{
+			if (($aSecurityType[$fam_custom_FieldSec] == 'bAll') or ($_SESSION[$aSecurityType[$fam_custom_FieldSec]]))
+			{			
+				if (isset($_POST["$fam_custom_Field"]))
+				{
+					$bUsedCustomFields = true;
+					$headerString .= "\"$fam_custom_Name\",";
+				}
+			}
+		}
+	}
+	// Add any family custom fields names to the header
+	if ($sFormat == "rollup")
+	{
+		while($aFamRow = mysql_fetch_array($rsFamCustomFields))
+		{
+			extract($aFamRow);
+			if (($aSecurityType[$fam_custom_FieldSec] == 'bAll') or ($_SESSION[$aSecurityType[$fam_custom_FieldSec]]))
+			{			
 				if (isset($_POST["$fam_custom_Field"]))
 				{
 					$bUsedCustomFields = true;
@@ -301,7 +322,7 @@ else
 	$headerString .= "\n";
 
 	header("Content-type: text/x-csv");
-	header("Content-Disposition: attachment; filename=infocentral-export-" . date("Ymd-Gis") . ".csv");
+	header("Content-Disposition: attachment; filename=churchinfo-export-" . date("Ymd-Gis") . ".csv");
 
 	echo $headerString;
 
@@ -323,7 +344,7 @@ else
 		$per_CellPhone = "";
 		$per_Email = "";
 		$per_WorkEmail = "";
-		$per_Envelope = "";
+		$fam_Envelope = "";
 		$per_MembershipDate = "";
 
 		$per_BirthDay = "";
@@ -380,7 +401,7 @@ else
 		{
 			// Check if we're filtering out people with no envelope number assigned
 			// ** should move this to the WHERE clause
-			if (!($bSkipNoEnvelope && (strlen($per_Envelope) == 0)))
+			if (!($bSkipNoEnvelope && (strlen($fam_Envelope) == 0)))
 			{
 				// If we are doing family roll-up, we use a single, formatted name field
 				if ($sFormat == "default")
@@ -411,7 +432,7 @@ else
 				if (isset($_POST["CellPhone"])) $sString .= "\",\"" . $sCellPhone;
 				if (isset($_POST["Email"])) $sString .= "\",\"" . $sEmail;
 				if (isset($_POST["WorkEmail"])) $sString .= "\",\"" . $per_WorkEmail;
-				if (isset($_POST["Envelope"])) $sString .= "\",\"" . $per_Envelope;
+				if (isset($_POST["Envelope"])) $sString .= "\",\"" . $fam_Envelope;
 				if (isset($_POST["MembershipDate"])) $sString .= "\",\"" . $per_MembershipDate;
 
 				if ($sFormat == "default")
@@ -462,7 +483,7 @@ else
 					}
 				}
 
-				if ($bUsedCustomFields)
+				if ($bUsedCustomFields && ($sFormat == "default"))
 				{
 					$sSQLcustom = "SELECT * FROM person_custom WHERE per_ID = " . $per_ID;
 					$rsCustomData = RunQuery($sSQLcustom);
@@ -505,6 +526,32 @@ else
 							extract($aFamCustomField);
 							if (isset($_POST["$fam_custom_Field"]))
 							{
+								if ($type_ID == 11) $fam_custom_Special = $sCountry;
+								$sString .= "\",\"" . displayCustomField($type_ID, trim($aFamCustomData[$fam_custom_Field]), $fam_custom_Special);
+							}
+						}
+					}
+				}
+				
+				if ($bUsedCustomFields && ($sFormat == "rollup"))
+				{
+					$sSQLFamCustom = "SELECT * FROM family_custom WHERE fam_ID = " . $per_fam_ID;
+					$rsFamCustomData = RunQuery($sSQLFamCustom);
+					$aFamCustomData = mysql_fetch_array($rsFamCustomData);
+					
+					if (@mysql_num_rows($rsFamCustomData) > 0 ){	
+						// Write custom field data
+						mysql_data_seek($rsFamCustomFields,0);
+						while($aFamCustomField = mysql_fetch_array($rsFamCustomFields))
+						{
+							$fam_custom_Field = "";
+							$fam_custom_Special = "";
+							$type_ID = "";
+
+							extract($aFamCustomField);
+							if (isset($_POST["$fam_custom_Field"]))
+							{
+
 								if ($type_ID == 11) $fam_custom_Special = $sCountry;
 								$sString .= "\",\"" . displayCustomField($type_ID, trim($aFamCustomData[$fam_custom_Field]), $fam_custom_Special);
 							}

@@ -32,8 +32,12 @@ if ( isset($_POST["GroupAssign"]) && $_SESSION['bManageGroups'] )
 
 if ( isset($_POST["VolunteerOpportunityAssign"]) && $_SESSION['bEditRecords'])
 {
-	$iVolunteerOpportunityID = FilterInput($_POST["VolunteerOpportunityID"],'int');
-	AddVolunteerOpportunity($iPersonID,$iVolunteerOpportunityID);
+	$volIDs = $_POST["VolunteerOpportunityIDs"];
+	if ($volIDs) {
+		foreach ($volIDs as $volID) {
+			AddVolunteerOpportunity($iPersonID, $volID);
+		}
+	}
 }
 
 // Service remove-volunteer-opportunity (these links set RemoveVO)
@@ -128,11 +132,11 @@ $rsGroups = RunQuery($sSQL);
 // Get the volunteer opportunities this Person is assigned to
 $sSQL = "SELECT vol_ID, vol_Name, vol_Description FROM volunteeropportunity_vol
 		LEFT JOIN person2volunteeropp_p2vo ON p2vo_vol_ID = vol_ID
-		WHERE person2volunteeropp_p2vo.p2vo_per_ID = " . $iPersonID;
+		WHERE person2volunteeropp_p2vo.p2vo_per_ID = " . $iPersonID . " ORDER by vol_Order";
 $rsAssignedVolunteerOpps = RunQuery($sSQL);
 
 // Get all the volunteer opportunities
-$sSQL = "SELECT vol_ID, vol_Name FROM volunteeropportunity_vol ORDER BY vol_Name";
+$sSQL = "SELECT vol_ID, vol_Name FROM volunteeropportunity_vol ORDER BY vol_Order";
 $rsVolunteerOpps = RunQuery($sSQL);
 
 // Get the Properties assigned to this Person
@@ -779,15 +783,12 @@ gettext("List View") . "</a> ";
 	<form method="post" action="PersonView.php?PersonID=<?php echo $iPersonID ?>">
 	<p class="SmallText" align="center">
 		<span class="SmallText"><?php echo gettext("Assign a New Volunteer Opportunity:"); ?></span>
-		<select name="VolunteerOpportunityID">
+		<select name="VolunteerOpportunityIDs[]", size=6, multiple>
 			<?php
-			while ($aRow = mysql_fetch_array($rsVolunteerOpps))
-			{
+			while ($aRow = mysql_fetch_array($rsVolunteerOpps)) {
 				extract($aRow);
-
 				//If the property doesn't already exist for this Person, write the <OPTION> tag
-				if (strlen(strstr($sAssignedVolunteerOpps,"," . $vol_ID . ",")) == 0)
-				{
+				if (strlen(strstr($sAssignedVolunteerOpps,"," . $vol_ID . ",")) == 0) {
 					echo "<option value=\"" . $vol_ID . "\">" . $vol_Name . "</option>";
 				}
 			}

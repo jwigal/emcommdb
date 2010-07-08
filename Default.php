@@ -35,7 +35,7 @@ require 'Include/Functions.php';
 // Initialize the variables
 $sErrorText = '';
 
-$_SESSION['bSecureServer'] = ($_SERVER['HTTPS'] == 'on');
+$_SESSION['bSecureServer'] = isAffirmative($_SERVER['HTTPS']);
 
 // Check if https is required, if so, check if we're using https.
 // Redirect back this page using https if https is required.
@@ -177,6 +177,9 @@ if ($iUserID > 0)
 
 		// Set the UserID
 		$_SESSION['iUserID'] = $usr_per_ID;
+
+		// Set the Root Path ... used in basic security check
+		$_SESSION['sRootPath'] = $sRootPath;
 
 		// Set the Actual Name for use in the sidebar
 		$_SESSION['UserFirstName'] = $per_FirstName;

@@ -20,42 +20,35 @@ require "Include/Functions.php";
 //Set the page title
 $sPageTitle = gettext("Confirm Delete");
 
-//Get the PledgeID out of the querystring
-$iPledgeID = FilterInput($_GET["PledgeID"],'int');
 $linkBack = FilterInput($_GET["linkBack"]);
+$sGroupKey = FilterInput($_GET["GroupKey"],'string'); 
 
 // Security: User must have Add or Edit Records permission to use this form in those manners
 // Clean error handling: (such as somebody typing an incorrect URL ?PersonID= manually)
-if (strlen($iPledgeID) > 0)
-{
-	if (!$_SESSION['bEditRecords'])
-	{
+if (strlen($iPledgeID) > 0) {
+	if (!$_SESSION['bEditRecords']) 	{
 		Redirect("Menu.php");
 		exit;
 	}
 	$sSQL = "SELECT '' FROM pledge_plg WHERE plg_plgID = " . $iPledgeID;
-	if (mysql_num_rows(RunQuery($sSQL)) == 0)
-	{
+	if (mysql_num_rows(RunQuery($sSQL)) == 0) {
 		Redirect("Menu.php");
 		exit;
 	}
-}
-elseif (!$_SESSION['bAddRecords'])
-{
+} elseif (!$_SESSION['bAddRecords']) {
 	Redirect("Menu.php");
 	exit;
 }
 
 //Is this the second pass?
-if (isset($_POST["Delete"]))
-{
-	$sSQL = "DELETE FROM `pledge_plg` WHERE `plg_plgID` = '" . $iPledgeID . "' LIMIT 1;";
-	//Execute the SQL
+if (isset($_POST["Delete"])) {
+	$sSQL = "DELETE FROM `pledge_plg` WHERE `plg_GroupKey` = '" . $sGroupKey . "';";
 	RunQuery($sSQL);
+
 	if ($linkBack <> "") {
 		Redirect ($linkBack);
 	}
-} else if (isset ($_POST["Cancel"])) {
+} elseif (isset ($_POST["Cancel"])) {
 	Redirect ($linkBack);
 }
 
@@ -63,7 +56,7 @@ require "Include/Header.php";
 
 ?>
 
-<form method="post" action="PledgeDelete.php?<?php echo "PledgeID=" . $iPledgeID . "&linkBack=" . $linkBack; ?>" name="PledgeDelete">
+<form method="post" action="PledgeDelete.php?<?php echo "GroupKey=" . $sGroupKey . "&linkBack=" . $linkBack; ?>" name="PledgeDelete">
 
 <table cellpadding="3" align="center">
 

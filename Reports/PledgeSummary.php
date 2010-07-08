@@ -226,8 +226,9 @@ if ($output == "pdf") {
 	   $curY += $pdf->incrementY;
 	}
 
+	header('Pragma: public');  // Needed for IE when using a shared SSL certificate
 	if ($iPDFOutputType == 1) {
-		$pdf->Output("PledgeSummaryReport" . date("Ymd") . ".pdf", true);
+		$pdf->Output("PledgeSummaryReport" . date("Ymd") . ".pdf", "D");
 	} else {
 		$pdf->Output();
 	}
@@ -241,7 +242,7 @@ if ($output == "pdf") {
 	$eol = "\r\n";
 
 	// Build headings row
-	eregi ("SELECT (.*) FROM ", $sSQL, $result);
+	preg_match ("/SELECT (.*) FROM /i", $sSQL, $result);
 	$headings = explode(",",$result[1]);
 	$buffer = "";
 	foreach ($headings as $heading) {

@@ -23,61 +23,201 @@ require "Include/EnvelopeFunctions.php";
 $sPageTitle = gettext("Envelope Manager");
 
 // Security: User must have finance permission to use this form
-if (!$_SESSION['bFinance'])
-{
+if (!$_SESSION['bFinance']) {
 	Redirect("Menu.php");
 	exit;
 }
 
-// Service the action buttons
-if (isset($_POST["AssignAllFamilies"])) {
-	if (isset($_POST["AssignAllFamiliesConfirm"])) {
-		$bMembersOnly = isset($_POST["MembersOnly"]);
-		$processNews = EnvelopeAssignAllFamilies ($bMembersOnly);
-	} else {
-		$processNews = gettext ("Not confirmed.");
+if (isset($_POST["Confirm"]) or isset($_POST["Confirm"])) {
+	$updateEnvelopes = 0;
+	if (isset($_POST["Confirm"])) {
+		$envelopesToWrite = $_SESSION['envelopesToWrite'];
+		foreach ($envelopesToWrite as $fam_ID => $envelope) {
+			$dSQL = "UPDATE family_fam SET fam_Envelope='" . $envelope . "' WHERE fam_ID='" . $fam_ID . "'";
+			RunQuery($dSQL);
+		}
 	}
 }
-if (isset($_POST["BriefingSheets"])) {
-	redirect ("Reports/EnvelopeReport.php");
+
+if (!$updateEnvelopes) {
+	if (isset($_POST["Classification"])) {
+		$iClassification = $_POST["Classification"];
+		$_SESSION['classification'] = $iClassification;
+	} else {
+		$iClassification = $_SESSION['classification'];
+	}
+
+	if (isset($_POST["SortBy"])) {
+		$sSortBy = $_POST["SortBy"];
+	} else {
+		$sSortBy = "name";
+	}
+	
+	if (isset($_POST["AssignStartNum"])) {
+		$iAssignStartNum = $_POST["AssignStartNum"];
+	} elseif (!$iAssignStartNum) {
+		$iAssignStartNum = 1;
+	}
+
+	$envelopesHash = getEnvelopes($iClassification);
+
+	$familyArray = getFamilyList($sDirRoleHead, $sDirRoleSpouse, $iClassification);
+	asort($familyArray);
+
+	//Get Classifications for the drop-down
+	$sSQL = "SELECT * FROM list_lst WHERE lst_ID = 1 ORDER BY lst_OptionSequence";
+	$rsClassifications = RunQuery($sSQL);
+	while ($aRow = mysql_fetch_array($rsClassifications)) {
+		extract($aRow);
+		$classification[$lst_OptionID] = $lst_OptionName;
+	}
 }
 
 require "Include/Header.php";
 
-echo "<p><B>" . $processNews . "</B></p>"; // Report any action just taken by button processing
-
 ?>
-
 <form method="post" action="ManageEnvelopes.php" name="ManageEnvelopes">
+<?php
 
-<table border width="100%" align="left">
+$duplicateEnvelopeHash = array();
+
+// Service the action buttons
+if (isset($_POST["PrintReport"])) {
+	redirect ("Reports/EnvelopeReport.php");
+} elseif (isset($_POST["AssignAllFamilies"])) {
+	$newEnvNum = $iAssignStartNum;
+	$envelopesToWrite = array(); // zero it out
+	foreach ($familyArray as $fam_ID => $fam_Data) {
+		$envelopesHash[$fam_ID] = $newEnvNum;
+		$envelopesToWrite[$fam_ID] = $newEnvNum++;
+	}
+} elseif (isset($_POST["ZeroAll"])) {
+	$envelopesHash = array(); // zero it out
+	foreach ($familyArray as $fam_ID => $fam_Data) {
+		$envelopesHash[$fam_ID] = 0;
+		$envelopesToWrite[$fam_ID] = 0;
+	}
+} elseif (isset($_POST["UpdateEnvelopes"])) {
+	$updateEnvelopes = 1;
+	foreach ($familyArray as $fam_ID => $fam_Data) {
+		$key = "EnvelopeID_" . $fam_ID;
+		if (isset($_POST[$key])) {
+			$newEnvelope = $_POST[$key];
+			$priorEnvelope = $envelopesHash[$fam_ID];
+			if ($newEnvelope <> $priorEnvelope) {
+				$envelopesToWrite[$fam_ID] = $newEnvelope;
+			}
+		}
+	}
+	$_SESSION['envelopesToWrite'] = $envelopesToWrite;
+
+	?>
+	<input type="submit" class="icButton" value="<?php echo gettext("Confirm"); ?>" 
+			 name="Confirm">
+	<input type="submit" class="icButton" value="<?php echo gettext("Cancel"); ?>" 
+			 name="Cancel">
+	<?php
+}
+
+if (!$updateEnvelopes) {
+	if ($envelopesToWrite) {
+		$_SESSION['envelopesToWrite'] = $envelopesToWrite;
+	}	
+
+	?>
+	<input type="submit" class="icButton" value="<?php echo gettext("Print Report"); ?>" 
+			 name="PrintReport">
+
+	<br><br>
+	<input type="submit" class="icButton" value="<?php echo gettext("Update Family Records"); ?>" 
+			 name="UpdateEnvelopes"> <-- Envelope #'s are not written to DB until this button is pressed
+
+	<br><br>
+
+	<table border=1>
 	<tr>
-		<td align="center" width="25%">
-			<input type="submit" class="icButton" value="<?php echo gettext("Assign envelopes to all familes"); ?>" 
+
+	<td><b>Family Select</b> with at least one: 
+
+	<select name="Classification">
+	<option value="0"><?php echo gettext("All"); ?></option>
+	<?php
+	foreach ($classification as $lst_OptionID => $lst_OptionName) {
+		echo "<option value=\"" . $lst_OptionID . "\"";
+		if ($iClassification == $lst_OptionID) echo " selected";
+		echo ">" . $lst_OptionName . "&nbsp;";
+	}
+	?>
+	</select>
+	<input type="submit" class="icButton" value="<?php echo gettext("Sort by"); ?>" name="Sort">
+	<input type="radio" Name="SortBy" value="name"
+	<?php if ($sSortBy == "name") echo " checked"; ?>><?php echo gettext("Last Name"); ?>
+	<input type="radio" Name="SortBy" value="envelope"
+	<?php if ($sSortBy == "envelope") echo " checked"; ?>><?php echo gettext("Envelope #"); ?>
+
+	</td>
+
+	<td><b>Envelope</b>
+	<input type="submit" class="icButton" value="<?php echo gettext("Zero"); ?>" 
+			 name="ZeroAll">
+	<input type="submit" class="icButton" value="<?php echo gettext("Assign starting at #"); ?>" 
 			 name="AssignAllFamilies">
-		</td>
-		<td align="left" width="75%">
-			<?php echo gettext("<p>Assign new envelope numbers to all families.  Any existing assignments will be replaced.  This feature will only execute if &quot;Check fo Confirm&quot; is enabled to inhibit accidental execution.</p>"); ?>
-			<p><input type="checkbox" name="MembersOnly"><?php echo gettext("Members only (families with at least one church member)");?></p>
-			<p><input type="checkbox" name="AssignAllFamiliesConfirm"><?php echo gettext("Check to confirm");?></p>
-		</td>
-	</tr>
+	<input type="text" name="AssignStartNum" value="<?php echo $iAssignStartNum; ?>" maxlength="5">
 
-	<tr>
-		<td align="center" width="25%">
-			<input type="submit" class="icButton" value="<?php echo gettext("Envelope List"); ?>" 
-			 name="BriefingSheets">
-		</td>
-		<td align="left" width="75%">
-			<?php echo gettext("Generate a PDF containing all the envelope assignments, sorted by family name."); ?>
-		</td>
-	</tr>
+	</td></tr>
 
-</table>
+	<?php
 
+	if ($_POST["SortBy"] == "envelope") {
+		asort($envelopesHash);
+		$arrayToLoop = $envelopesHash;
+	} else {
+		$arrayToLoop = $familyArray;
+	}
+	
+	foreach ($arrayToLoop as $fam_ID => $value) {
+		if ($_POST["SortBy"] == "envelope") {
+			$envelope = $value;
+			$fam_Data = $familyArray[$fam_ID];
+		} else {
+			$fam_Data = $value;
+			$envelope = $envelopesHash[$fam_ID];
+		}
+		echo "<tr>";
+		echo "<td>" . $fam_Data . "&nbsp;</td>";
+		if ($envelope and $duplicateEnvelopeHash and array_key_exists($envelope, $duplicateEnvelopeHash)) {
+			$tdTag = "<td bgcolor='red'>";
+		} else {
+			$duplicateEnvelopeHash[$envelope] = $fam_ID;
+			$tdTag = "<td>";
+		}
+		echo $tdTag;?><class="TextColumn">
+		<input type="text" name="EnvelopeID_<?php echo $fam_ID; ?>" value="<?php echo $envelope; ?>" maxlength="10">
+		</td></tr>
+		<?php
+	}
+}
+?>	
+</table><br>
 </form>
 
-
 <?php
+
+function getEnvelopes($classification) {
+	if ($classification) {
+		$sSQL = "SELECT fam_ID, fam_Envelope FROM family_fam LEFT JOIN person_per ON fam_ID = per_fam_ID WHERE per_cls_ID='" . $classification . "'";
+	} else {
+		$sSQL = "SELECT fam_ID, fam_Envelope FROM family_fam";
+	}
+
+	$sSQL .= " ORDER by fam_Envelope";
+	$dEnvelopes = RunQuery($sSQL);
+	while ($aRow = mysql_fetch_array($dEnvelopes)) {
+		extract($aRow);
+		$envelopes[$fam_ID] = $fam_Envelope;
+	}
+	return $envelopes;
+}
+
 require "Include/Footer.php";
 ?>

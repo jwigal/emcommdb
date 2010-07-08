@@ -454,7 +454,7 @@ if ($iMode == 1 || $iMode == 2)
 				echo gettext("Add a New Person Record") . "</a><BR>";
 			}
 
-            echo "<a href=\"SelectList.php?mode=$sMode&amp;type=$iGroupTypeMissing&amp;Filter=$sFilter&amp;Classification=$iClassification&amp;FamilyRole=$iFamilyRole&amp;Gender=$iGender&amp;grouptype=$iGroupType&amp;groupid=$iGroupID&amp;grouproleid=$iRoleID";
+            echo "<a href=\"SelectList.php?mode=$sMode&amp;type=$iGroupTypeMissing&amp;Filter=$sFilter&amp;Classification=$iClassification&amp;FamilyRole=$iFamilyRole&amp;Gender=$iGender&amp;grouptype=$iGroupType&amp;groupid=$iGroupID&amp;grouproleid=$iRoleID&amp;PersonProperties=$iPersonProperty";
             if($sSort) 
 				echo "&amp;Sort=$sSort";
 
@@ -726,7 +726,7 @@ if ($iMode == 1 || $iMode == 2)
 
                 // Create Sort Links
                 echo '<div align="center">';
-                echo "<a href=\"SelectList.php?mode=$sMode&amp;type=$iGroupTypeMissing&amp;Filter=$sFilter&amp;Classification=$iClassification&amp;FamilyRole=$iFamilyRole&amp;Gender=$iGender&amp;grouptype=$iGroupType&amp;groupid=$iGroupID&amp;grouproleid=$iRoleID";
+                echo "<a href=\"SelectList.php?mode=$sMode&amp;type=$iGroupTypeMissing&amp;Filter=$sFilter&amp;Classification=$iClassification&amp;FamilyRole=$iFamilyRole&amp;Gender=$iGender&amp;grouptype=$iGroupType&amp;groupid=$iGroupID&amp;grouproleid=$iRoleID&amp;PersonProperties=$iPersonProperty";
                 if($sSort) echo "&amp;Sort=$sSort";
                 echo "\">" . gettext("View All") . "</a>";
                 while ($aLetter = mysql_fetch_row($rsLetters))
@@ -839,7 +839,13 @@ if ($iMode == 1 || $iMode == 2)
                                 $sLimit25 = "selected";
                         if ($_SESSION['SearchLimit'] == "50")
                                 $sLimit50 = "selected";
-
+                        if ($_SESSION['SearchLimit'] == "100")
+                                $sLimit100 = "selected";
+                        if ($_SESSION['SearchLimit'] == "200")
+                                $sLimit200 = "selected";
+                        if ($_SESSION['SearchLimit'] == "500")
+                                $sLimit500 = "selected";
+                                
                         echo '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'. gettext("Display:") . '&nbsp;
 				<select class="SmallText" name="Number" onchange="this.form.submit()">
                                 <option value="5" '.$sLimit5.'>5</option>
@@ -847,7 +853,10 @@ if ($iMode == 1 || $iMode == 2)
                                 <option value="20" '.$sLimit20.'>20</option>
                                 <option value="25" '.$sLimit25.'>25</option>
                                 <option value="50" '.$sLimit50.'>50</option>
-				</select>&nbsp;
+                                <option value="100" '.$sLimit100.'>100</option>
+                                <option value="200" '.$sLimit200.'>200</option>
+                                <option value="500" '.$sLimit500.'>500</option>
+                        </select>&nbsp;
                         </form>
                         </div>
                         <BR>';
@@ -1433,7 +1442,13 @@ else
                         $sLimit25 = "selected";
                 if ($_SESSION['SearchLimit'] == "50")
                         $sLimit50 = "selected";
-
+                if ($_SESSION['SearchLimit'] == "100")
+                        $sLimit100 = "selected";
+                if ($_SESSION['SearchLimit'] == "200")
+                        $sLimit200 = "selected";
+                if ($_SESSION['SearchLimit'] == "500")
+                        $sLimit500 = "selected";
+                        
                 echo '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'. gettext("Display:") . '&nbsp;
                 <select class="SmallText" name="Number">
                         <option value="5" '.$sLimit5.'>5</option>
@@ -1441,6 +1456,9 @@ else
                         <option value="20" '.$sLimit20.'>20</option>
                         <option value="25" '.$sLimit25.'>25</option>
                         <option value="50" '.$sLimit50.'>50</option>
+                        <option value="100" '.$sLimit100.'>100</option>
+                        <option value="200" '.$sLimit200.'>200</option>
+                        <option value="500" '.$sLimit500.'>500</option>
                 </select>&nbsp;
                 <input type="submit" class="icTinyButton" value="' . gettext("Go") .'">
                 </form>

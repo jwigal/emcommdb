@@ -2,11 +2,9 @@
 /Config.php/1.27/Thu Dec  7 17:02:20 2006//
 /Contact_Vcard_Build.php/1.1.1.1/Sun Aug 22 13:52:51 2004//
 /CountryDropDown.php/1.2/Sat Jan 12 02:54:58 2008//
-/EchoConfig.php/1.1/Sun Mar 25 12:19:48 2007//
 /EnvelopeFunctions.php/1.1/Sat Dec 31 16:01:47 2005//
 /Footer-Short.php/1.1.1.1/Sun Aug 22 13:52:57 2004//
 /Footer.php/1.1.1.1/Sun Aug 22 13:52:57 2004//
-/Functions.php/1.52/Wed Apr 16 21:06:35 2008//
 /GeoCoder.php/1.8/Fri Aug  3 03:57:32 2007//
 /GetGroupArray.php/1.1/Sat Aug 28 15:59:34 2004//
 /Header-Minimal.php/1.2/Thu May  1 00:26:47 2008//
@@ -15,7 +13,6 @@
 /Header.php/1.44/Sat Jun  2 03:33:54 2007//
 /Initialize.php/1.2/Mon Oct 16 20:21:22 2006//
 /LabelFunctions.php/1.2/Sat Apr 22 20:10:24 2006//
-/LoadConfigs.php/1.15/Mon Apr 28 01:58:13 2008//
 /MICRFunctions.php/1.3/Sun May 29 22:43:55 2005//
 /ReportConfig.php/1.21/Thu May 15 05:06:43 2008//
 /ReportFunctions.php/1.5/Thu May  1 17:15:17 2008//
@@ -27,7 +24,6 @@
 /Style.css/1.2/Wed Apr 16 21:07:03 2008//
 /TranslateMenuOptions.php/1.1/Thu Apr 24 12:11:18 2008//
 /alphaAPI.js/1.1.1.1/Sun Aug 22 13:52:48 2004//
-/class_fpdf_labels.php/1.6/Thu May 15 05:06:43 2008//
 /domLib.js/1.1.1.1/Sun Aug 22 13:52:52 2004//
 /domMenu-IE.js/1.1.1.1/Sun Aug 22 13:52:54 2004//
 /domMenu.js/1.1.1.1/Sun Aug 22 13:52:56 2004//
@@ -35,4 +31,13 @@
 /echophp.class/1.2/Mon Oct 17 00:51:17 2005//
 /index.html/1.1/Mon Jan 14 21:50:33 2008//
 /winlocalelist.php/1.1/Tue Sep 25 05:18:17 2007//
-D
+D/fpdf////
+D/fpdf151////
+D/jpgraph-1.13////
+D/jscalendar////
+D/phpmailer////
+/EchoConfig.php/1.2/Thu Jul  8 17:44:17 2010//
+/Functions.php/1.61/Thu Jul  8 17:44:17 2010//
+/LoadConfigs.php/1.16/Thu Jul  8 17:44:17 2010//
+/class_fpdf_labels.php/1.7/Thu Jul  8 17:44:17 2010//
+/eGiveConfig.php/1.4/Tue Apr 27 14:29:56 2010//

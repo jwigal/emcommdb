@@ -1,4 +1,4 @@
--- Install Version 1.2.10
+-- Install Version 1.2.12
 -- --------------------------------------------------------
 
 -- 
@@ -99,13 +99,13 @@ INSERT INTO `config_cfg` (`cfg_id`, `cfg_name`, `cfg_value`, `cfg_type`, `cfg_de
 (1, 'sWEBCALENDARDB', '', 'text', '', 'WebCalendar database name', 'General', NULL),
 (2, 'debug', '1', 'boolean', '1', 'Set debug mode\r\nThis may be helpful for when you''re first setting up ChurchInfo, but you should\r\nprobably turn it off for maximum security otherwise.  If you are having trouble,\r\nplease enable this so that you''ll know what the errors are.  This is especially\r\nimportant if you need to report a problem on the help forums.', 'General', NULL),
 (3, 'sJPGRAPH_PATH', 'Include/jpgraph-1.13/src', 'text', 'Include/jpgraph-1.13/src', 'JPGraph library', 'General', NULL),
-(4, 'sFPDF_PATH', 'Include/fpdf', 'text', 'Include/fpdf', 'FPDF library', 'General', NULL),
+(4, 'sFPDF_PATH', 'Include/fpdf16', 'text', 'Include/fpdf16', 'FPDF library', 'General', NULL),
 (5, 'sDirClassifications', '1,2,4,5', 'text', '1,2,4,5', 'Include only these classifications in the directory, comma seperated', 'General', NULL),
 (6, 'sDirRoleHead', '1,7', 'text', '1,7', 'These are the family role numbers designated as head of house', 'General', NULL),
 (7, 'sDirRoleSpouse', '2', 'text', '2', 'These are the family role numbers designated as spouse', 'General', NULL),
 (8, 'sDirRoleChild', '3', 'text', '3', 'These are the family role numbers designated as child', 'General', NULL),
 (9, 'sSessionTimeout', '3600', 'number', '3600', 'Session timeout length in seconds\rSet to zero to disable session timeouts.', 'General', NULL),
-(10, 'aFinanceQueries', '28,30,31', 'text', '28', 'Queries for which user must have finance permissions to use:', 'General', NULL),
+(10, 'aFinanceQueries', '28,30,31,32', 'text', '28', 'Queries for which user must have finance permissions to use:', 'General', NULL),
 (11, 'bCSVAdminOnly', '1', 'boolean', '1', 'Should only administrators have access to the CSV export system and directory report?', 'General', NULL),
 (12, 'sDefault_Pass', 'password', 'text', 'password', 'Default password for new users and those with reset passwords', 'General', NULL),
 (13, 'sMinPasswordLength', '6', 'number', '6', 'Minimum length a user may set their password to', 'General', NULL),
@@ -149,9 +149,11 @@ INSERT INTO `config_cfg` (`cfg_id`, `cfg_name`, `cfg_value`, `cfg_type`, `cfg_de
 (51, 'bHideLatLon', '0', 'boolean', '0', 'Set true to disable entering Latitude and Longitude in Family Editor.  Set false to enable entering Latitude and Longitude in Family Editor.  Lookups are still performed, just not displayed.', 'General', NULL),
 (52, 'bUseDonationEnvelopes', '0', 'boolean', '0', 'Set true to enable use of donation envelopes', 'General', NULL),
 (53, 'sHeader', '', 'textarea', '', 'Enter in HTML code which will be displayed as a header at the top of each page. Be sure to close your tags! Note: You must REFRESH YOUR BROWSER A SECOND TIME to view the new header.', 'General', NULL),
-(54, 'sISTusername', 'username', 'text', 'username', 'Intelligent Search Technolgy, Ltd. CorrectAddress Username for https://www.name-searching.com/CaddressASP', 'General', NULL),
-(55, 'sISTpassword', '', 'text', '', 'Intelligent Search Technolgy, Ltd. CorrectAddress Password for https://www.name-searching.com/CaddressASP', 'General', NULL),
+(54, 'sISTusername', 'username', 'text', 'username', 'Intelligent Search Technolgy, Ltd. CorrectAddress Username for https://www.intelligentsearch.com/Hosted/User', 'General', NULL),
+(55, 'sISTpassword', '', 'text', '', 'Intelligent Search Technolgy, Ltd. CorrectAddress Password for https://www.intelligentsearch.com/Hosted/User', 'General', NULL),
 (56, 'bUseGoogleGeocode', '1', 'boolean', '1', 'Set true to use the Google geocoder.  Set false to use rpc.geocoder.us.', 'General', NULL),
+(57, 'iChecksPerDepositForm', '14', 'number', '14', 'Number of checks for Deposit Slip Report', 'General', NULL),
+(58, 'bUseScannedChecks', '0', 'boolean', '0', 'Set true to enable use of scanned checks', 'General', NULL),
 (999, 'bRegistered', '0', 'boolean', '0', 'ChurchInfo has been registered.  The ChurchInfo team uses registration information to track usage.  This information is kept confidential and never released or sold.  If this field is true the registration option in the admin menu changes to update registration.', 'General', NULL),
 (1001, 'leftX', '20', 'number', '20', 'Left Margin (1 = 1/100th inch)', 'ChurchInfoReport', NULL),
 (1002, 'incrementY', '4', 'number', '4', 'Line Thickness (1 = 1/100th inch', 'ChurchInfoReport', NULL),
@@ -200,7 +202,7 @@ CREATE TABLE `deposit_dep` (
   `dep_Comment` text,
   `dep_EnteredBy` mediumint(9) unsigned default NULL,
   `dep_Closed` tinyint(1) NOT NULL default '0',
-  `dep_Type` enum('Bank','CreditCard','BankDraft') NOT NULL default 'Bank',
+  `dep_Type` enum('Bank','CreditCard','BankDraft','eGive') NOT NULL default 'Bank',
   PRIMARY KEY  (`dep_ID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 PACK_KEYS=0 AUTO_INCREMENT=1 ;
 
@@ -612,7 +614,7 @@ CREATE TABLE `menuconfig_mcf` (
   `parent` varchar(20) NOT NULL,
   `ismenu` tinyint(1) NOT NULL,
   `content_english` varchar(100) NOT NULL,
-  `content` varchar(100) NOT NULL,
+  `content` varchar(100) NULL,
   `uri` varchar(255) NOT NULL,
   `statustext` varchar(255) NOT NULL,
   `security_grp` varchar(50) NOT NULL,
@@ -671,6 +673,14 @@ INSERT INTO `menuconfig_mcf` (`mid`, `name`, `parent`, `ismenu`, `content_englis
 (38, 'depositreport', 'deposit', 0, 'Deposit Reports', NULL, 'FinancialReports.php', '', 'bFinance', NULL, 0, 0, NULL, 1, 3),
 (39, 'separator3', 'deposit', 0, '---------------------------', NULL, '', '', 'bFinance', NULL, 0, 0, NULL, 1, 4),
 (40, 'depositslip', 'deposit', 0, 'Edit Deposit Slip', NULL, 'DepositSlipEditor.php', '', 'bFinance', 'iCurrentDeposit', 1, 1, 'DepositSlipID', 1, 5),
+
+(84, 'fundraiser', 'root', 1, 'Fundraiser', NULL, '', '', 'bAll', NULL, 0, 0, NULL, 1, 5),
+(85, 'newfundraiser', 'fundraiser', 0, 'Create New Fundraiser', NULL, 'FundRaiserEditor.php?FundRaiserID=-1', '', 'bAll', NULL, 0, 0, NULL, 1, 1),
+(86, 'viewfundraiser', 'fundraiser', 0, 'View All Fundraisers', NULL, 'FindFundRaiser.php', '', 'bAll', NULL, 0, 0, NULL, 1, 1),
+(87, 'editfundraiser', 'fundraiser', 0, 'Edit Fundraiser', NULL, 'FundRaiserEditor.php', '', 'bAll', 'iCurrentFundraiser', 1, 1, 'FundRaiserID', 1, 5),
+(88, 'viewbuyers', 'fundraiser', 0, 'View Buyers', NULL, 'PaddleNumList.php', '', 'bAll', 'iCurrentFundraiser', 1, 1, 'FundRaiserID', 1, 5),
+(89, 'adddonors', 'fundraiser', 0, 'Add Donors to Buyer List', NULL, 'AddDonors.php', '', 'bAll', 'iCurrentFundraiser', 1, 1, 'FundRaiserID', 1, 5),
+
 (41, 'cart', 'root', 1, 'Cart', NULL, '', '', 'bAll', NULL, 0, 0, NULL, 1, 6),
 (42, 'viewcart', 'cart', 0, 'List Cart Items', NULL, 'CartView.php', '', 'bAll', NULL, 0, 0, NULL, 1, 1),
 (43, 'emptycart', 'cart', 0, 'Empty Cart', NULL, 'CartView.php?Action=EmptyCart', '', 'bAll', NULL, 0, 0, NULL, 1, 2),
@@ -875,7 +885,7 @@ CREATE TABLE `pledge_plg` (
   `plg_date` date default NULL,
   `plg_amount` decimal(8,2) default NULL,
   `plg_schedule` enum('Monthly','Quarterly','Once','Other') default NULL,
-  `plg_method` enum('CREDITCARD','CHECK','CASH','BANKDRAFT') default NULL,
+  `plg_method` enum('CREDITCARD','CHECK','CASH','BANKDRAFT','EGIVE') default NULL,
   `plg_comment` text,
   `plg_DateLastEdited` date NOT NULL default '0000-00-00',
   `plg_EditedBy` mediumint(9) NOT NULL default '0',
@@ -889,6 +899,7 @@ CREATE TABLE `pledge_plg` (
   `plg_aut_Cleared` tinyint(1) NOT NULL default '0',
   `plg_aut_ResultID` mediumint(9) NOT NULL default '0',
   `plg_NonDeductible` decimal(8,2) NOT NULL,
+  `plg_GroupKey` VARCHAR( 64 ) NOT NULL,
   PRIMARY KEY  (`plg_plgID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
@@ -995,7 +1006,16 @@ INSERT INTO `queryparameteroptions_qpo` (`qpo_ID`, `qpo_qrp_ID`, `qpo_Display`, 
 (24, 31, '2009/2010', '14'),
 (25, 31, '2010/2011', '15'),
 (26, 15, 'Email', 'per_Email'),
-(27, 15, 'WorkEmail', 'per_WorkEmail');
+(27, 15, 'WorkEmail', 'per_WorkEmail'),
+(28, 32, '2007/2008', '12'),
+(29, 32, '2008/2009', '13'),
+(30, 32, '2009/2010', '14'),
+(31, 32, '2010/2011', '15'),
+(32, 33, 'Member', '1'),
+(33, 33, 'Regular Attender', '2'),
+(34, 33, 'Guest', '3'),
+(35, 33, 'Non-Attender', '4'),
+(36, 33, 'Non-Attender (staff)', '5');
 
 -- --------------------------------------------------------
 
@@ -1053,6 +1073,8 @@ INSERT INTO `queryparameters_qrp` (`qrp_ID`, `qrp_qry_ID`, `qrp_Type`, `qrp_Opti
 (28, 28, 1, '', 'Second Fiscal Year', 'Second fiscal year for comparison', 'fyid2', '9', 1, 0, '', 12, 9, 0, 0),
 (30, 30, 1, '', 'First Fiscal Year', 'Pledged this year', 'fyid1', '9', 1, 0, '', 12, 9, 0, 0),
 (31, 30, 1, '', 'Second Fiscal Year', 'but not this year', 'fyid2', '9', 1, 0, '', 12, 9, 0, 0),
+(32, 32, 1, '', 'Fiscal Year', 'Fiscal Year.', 'fyid', '9', 1, 0, '', 12, 9, 0, 0),
+(33, 18, 1, '', 'Classification', 'Member, Regular Attender, etc.', 'percls', '1', 1, 0, '', 12, 1, 1, 2),
 (100, 100, 2, 'SELECT vol_ID AS Value, vol_Name AS Display FROM volunteeropportunity_vol ORDER BY vol_Name', 'Volunteer opportunities', 'First volunteer opportunity choice', 'volopp1', '1', 1, 0, '', 12, 1, 1, 2),
 (101, 100, 2, 'SELECT vol_ID AS Value, vol_Name AS Display FROM volunteeropportunity_vol ORDER BY vol_Name', 'Volunteer opportunities', 'Second volunteer opportunity choice', 'volopp2', '1', 1, 0, '', 12, 1, 1, 2);
 
@@ -1080,14 +1102,14 @@ CREATE TABLE `query_qry` (
 INSERT INTO `query_qry` (`qry_ID`, `qry_SQL`, `qry_Name`, `qry_Description`, `qry_Count`) VALUES 
 (2, 'SELECT COUNT(per_ID)\nAS ''Count''\nFROM person_per', 'Person Count', 'Returns the total number of people in the database.', 0),
 (3, 'SELECT CONCAT(''<a href=FamilyView.php?FamilyID='',fam_ID,''>'',fam_Name,''</a>'') AS ''Family Name'', COUNT(*) AS ''No.''\nFROM person_per\nINNER JOIN family_fam\nON fam_ID = per_fam_ID\nGROUP BY per_fam_ID\nORDER BY ''No.'' DESC', 'Family Member Count', 'Returns each family and the total number of people assigned to them.', 0),
-(4, 'SELECT per_ID as AddToCart,CONCAT(''<a\r\nhref=PersonView.php?PersonID='',per_ID,''>'',per_FirstName,''\r\n'',per_LastName,''</a>'') AS Name,\r\nCONCAT(per_BirthMonth,''/'',per_BirthDay,''/'',per_BirthYear) AS ''Birth Date'',\r\nYEAR(CURRENT_DATE) - per_BirthYear - 1 AS ''Age''\r\nFROM person_per\r\nWHERE\r\nDATE_ADD(CONCAT(per_BirthYear,''-'',per_BirthMonth,''-'',per_BirthDay),INTERVAL\r\n~min~ YEAR) <= CURDATE()\r\nAND\r\nDATE_ADD(CONCAT(per_BirthYear,''-'',per_BirthMonth,''-'',per_BirthDay),INTERVAL\r\n(~max~ + 1) YEAR) >= CURDATE()', 'Person by Age', 'Returns any person records with ages between two given ages.', 1),
+(4, 'SELECT per_ID as AddToCart,CONCAT(''<a\r\nhref=PersonView.php?PersonID='',per_ID,''>'',per_FirstName,''\r\n'',per_LastName,''</a>'') AS Name,\r\nCONCAT(per_BirthMonth,''/'',per_BirthDay,''/'',per_BirthYear) AS ''Birth Date'',\r\nDATE_FORMAT(FROM_DAYS(TO_DAYS(NOW())-TO_DAYS(CONCAT(per_BirthYear,''-'',per_BirthMonth,''-'',per_BirthDay))),''%Y'')+0 AS  ''Age''\r\nFROM person_per\r\nWHERE\r\nDATE_ADD(CONCAT(per_BirthYear,''-'',per_BirthMonth,''-'',per_BirthDay),INTERVAL\r\n~min~ YEAR) <= CURDATE()\r\nAND\r\nDATE_ADD(CONCAT(per_BirthYear,''-'',per_BirthMonth,''-'',per_BirthDay),INTERVAL\r\n(~max~ + 1) YEAR) >= CURDATE()', 'Person by Age', 'Returns any person records with ages between two given ages.', 1),
 (6, 'SELECT COUNT(per_ID) AS Total FROM person_per WHERE per_Gender = ~gender~', 'Total By Gender', 'Total of records matching a given gender.', 0),
 (7, 'SELECT per_ID as AddToCart, CONCAT(per_FirstName,'' '',per_LastName) AS Name FROM person_per WHERE per_fmr_ID = ~role~ AND per_Gender = ~gender~', 'Person by Role and Gender', 'Selects person records with the family role and gender specified.', 1),
 (9, 'SELECT \r\nper_ID as AddToCart, \r\nCONCAT(per_FirstName,'' '',per_LastName) AS Name, \r\nCONCAT(r2p_Value,'' '') AS Value\r\nFROM person_per,record2property_r2p\r\nWHERE per_ID = r2p_record_ID\r\nAND r2p_pro_ID = ~PropertyID~\r\nORDER BY per_LastName', 'Person by Property', 'Returns person records which are assigned the given property.', 1),
 (15, 'SELECT per_ID as AddToCart, CONCAT(''<a href=PersonView.php?PersonID='',per_ID,''>'',per_FirstName,'' '',per_MiddleName,'' '',per_LastName,''</a>'') AS Name, fam_City as City, fam_State as State, fam_Zip as ZIP, per_HomePhone as HomePhone, per_Email as Email, per_WorkEmail as WorkEmail FROM person_per RIGHT JOIN family_fam ON family_fam.fam_id = person_per.per_fam_id WHERE ~searchwhat~ LIKE ''%~searchstring~%''', 'Advanced Search', 'Search by any part of Name, City, State, Zip, Home Phone, Email, or Work Email.', 1),
 (16, 'SELECT per_ID as AddToCart, CONCAT(''<a href=PersonView.php?PersonID='',per_ID,''>'',per_FirstName,'' '',per_LastName,''</a>'') AS Name FROM person_per LEFT JOIN person2group2role_p2g2r ON per_id = p2g2r_per_ID LEFT JOIN group_grp a ON grp_ID = p2g2r_grp_ID LEFT JOIN list_lst b ON lst_ID = grp_RoleListID AND p2g2r_rle_ID = lst_OptionID WHERE lst_OptionName = ''Teacher''', 'Find Teachers', 'Find all people assigned to Sunday school classes as teachers', 1),
 (17, 'SELECT per_ID as AddToCart, CONCAT(''<a href=PersonView.php?PersonID='',per_ID,''>'',per_FirstName,'' '',per_LastName,''</a>'') AS Name FROM person_per LEFT JOIN person2group2role_p2g2r ON per_id = p2g2r_per_ID LEFT JOIN group_grp a ON grp_ID = p2g2r_grp_ID LEFT JOIN list_lst b ON lst_ID = grp_RoleListID AND p2g2r_rle_ID = lst_OptionID WHERE lst_OptionName = ''Student''', 'Find Students', 'Find all people assigned to Sunday school classes as students', 1),
-(18, 'SELECT per_ID as AddToCart, per_BirthDay as Day, CONCAT(per_FirstName,'' '',per_LastName) AS Name FROM person_per WHERE per_cls_ID=1 AND per_BirthMonth=~birthmonth~ ORDER BY per_BirthDay', 'Birthdays', 'Members with birthdays in a particular month', 0),
+(18, 'SELECT per_ID as AddToCart, per_BirthDay as Day, CONCAT(per_FirstName,'' '',per_LastName) AS Name FROM person_per WHERE per_cls_ID=~percls~ AND per_BirthMonth=~birthmonth~ ORDER BY per_BirthDay', 'Birthdays', 'People with birthdays in a particular month', 0),
 (19, 'SELECT per_ID as AddToCart, CONCAT(''<a href=PersonView.php?PersonID='',per_ID,''>'',per_FirstName,'' '',per_LastName,''</a>'') AS Name FROM person_per LEFT JOIN person2group2role_p2g2r ON per_id = p2g2r_per_ID LEFT JOIN group_grp a ON grp_ID = p2g2r_grp_ID LEFT JOIN list_lst b ON lst_ID = grp_RoleListID AND p2g2r_rle_ID = lst_OptionID WHERE lst_OptionName = ''Student'' AND grp_ID = ~group~ ORDER BY per_LastName', 'Class Students', 'Find students for a particular class', 1),
 (20, 'SELECT per_ID as AddToCart, CONCAT(''<a href=PersonView.php?PersonID='',per_ID,''>'',per_FirstName,'' '',per_LastName,''</a>'') AS Name FROM person_per LEFT JOIN person2group2role_p2g2r ON per_id = p2g2r_per_ID LEFT JOIN group_grp a ON grp_ID = p2g2r_grp_ID LEFT JOIN list_lst b ON lst_ID = grp_RoleListID AND p2g2r_rle_ID = lst_OptionID WHERE lst_OptionName = ''Teacher'' AND grp_ID = ~group~ ORDER BY per_LastName', 'Class Teachers', 'Find teachers for a particular class', 1),
 (21, 'SELECT per_ID as AddToCart, CONCAT(''<a href=PersonView.php?PersonID='',per_ID,''>'',per_FirstName,'' '',per_LastName,''</a>'') AS Name FROM person_per LEFT JOIN person2group2role_p2g2r ON per_id = p2g2r_per_ID WHERE p2g2r_grp_ID=~group~ ORDER BY per_LastName', 'Registered students', 'Find Registered students', 1),
@@ -1099,7 +1121,8 @@ INSERT INTO `query_qry` (`qry_ID`, `qry_SQL`, `qry_Name`, `qry_Description`, `qr
 (27, 'SELECT per_ID as AddToCart, CONCAT(per_FirstName,'' '',per_LastName) AS Name FROM person_per inner join family_fam on per_fam_ID=fam_ID where per_fmr_ID<>3 AND fam_OkToCanvass="TRUE" ORDER BY fam_Zip', 'Families to Canvass', 'People in families that are ok to canvass.', 0),
 (28, 'SELECT fam_Name, a.plg_amount as PlgFY1, b.plg_amount as PlgFY2 from family_fam left join pledge_plg a on a.plg_famID = fam_ID and a.plg_FYID=~fyid1~ and a.plg_PledgeOrPayment=''Pledge'' left join pledge_plg b on b.plg_famID = fam_ID and b.plg_FYID=~fyid2~ and b.plg_PledgeOrPayment=''Pledge'' order by fam_Name', 'Pledge comparison', 'Compare pledges between two fiscal years', 1),
 (30, 'SELECT per_ID as AddToCart, CONCAT(per_FirstName,'' '',per_LastName) AS Name, fam_address1, fam_city, fam_state, fam_zip FROM person_per join family_fam on per_fam_id=fam_id where per_fmr_id<>3 and per_fam_id in (select fam_id from family_fam inner join pledge_plg a on a.plg_famID=fam_ID and a.plg_FYID=~fyid1~ and a.plg_amount>0) and per_fam_id not in (select fam_id from family_fam inner join pledge_plg b on b.plg_famID=fam_ID and b.plg_FYID=~fyid2~ and b.plg_amount>0)', 'Missing pledges', 'Find people who pledged one year but not another', 1),
-(31, 'select per_ID as AddToCart, per_FirstName, per_LastName, per_email from person_per, autopayment_aut where aut_famID=per_fam_ID and aut_CreditCard!="" and per_email!="" and (per_fmr_ID=1 or per_fmr_ID=2 or per_cls_ID=1)', 'Credit Cart People', 'People who are configured to pay by credit card.', 0),
+(31, 'select per_ID as AddToCart, per_FirstName, per_LastName, per_email from person_per, autopayment_aut where aut_famID=per_fam_ID and aut_CreditCard!="" and per_email!="" and (per_fmr_ID=1 or per_fmr_ID=2 or per_cls_ID=1)', 'Credit Card People', 'People who are configured to pay by credit card.', 0),
+(32, 'SELECT fam_Name, fam_Envelope, b.fun_Name as Fund_Name, a.plg_amount as Pledge from family_fam left join pledge_plg a on a.plg_famID = fam_ID and a.plg_FYID=~fyid~ and a.plg_PledgeOrPayment=\'Pledge\' and a.plg_amount>0 join donationfund_fun b on b.fun_ID = a.plg_fundID order by fam_Name, a.plg_fundID', 'Family Pledge by Fiscal Year', 'Pledge summary by family name for each fund for the selected fiscal year', 1),
 (100, 'SELECT a.per_ID as AddToCart, CONCAT(''<a href=PersonView.php?PersonID='',a.per_ID,''>'',a.per_FirstName,'' '',a.per_LastName,''</a>'') AS Name FROM person_per AS a LEFT JOIN person2volunteeropp_p2vo p2v1 ON (a.per_id = p2v1.p2vo_per_ID AND p2v1.p2vo_vol_ID = ~volopp1~) LEFT JOIN person2volunteeropp_p2vo p2v2 ON (a.per_id = p2v2.p2vo_per_ID AND p2v2.p2vo_vol_ID = ~volopp2~) WHERE p2v1.p2vo_per_ID=p2v2.p2vo_per_ID ORDER BY per_LastName', 'Volunteers', 'Find volunteers for who match two specific opportunity codes', 1);
 
 -- --------------------------------------------------------
@@ -1276,7 +1299,7 @@ CREATE TABLE `version_ver` (
 -- 
 
 INSERT INTO `version_ver` (`ver_version`, `ver_date`) VALUES 
-('1.2.11', NOW() );
+('1.2.12', NOW() );
 
 -- --------------------------------------------------------
 
@@ -1285,7 +1308,8 @@ INSERT INTO `version_ver` (`ver_version`, `ver_date`) VALUES
 -- 
 
 CREATE TABLE `volunteeropportunity_vol` (
-  `vol_ID` tinyint(3) NOT NULL auto_increment,
+  `vol_ID` int(3) NOT NULL auto_increment,
+  `vol_Order` int(3) NOT NULL default '0', 
   `vol_Active` enum('true','false') NOT NULL default 'true',
   `vol_Name` varchar(30) default NULL,
   `vol_Description` varchar(100) default NULL,
@@ -1314,7 +1338,63 @@ CREATE TABLE `whycame_why` (
   PRIMARY KEY  (`why_ID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
--- 
--- Dumping data for table `whycame_why`
+--
+-- Fundraiser support added 4/11/2009 Michael Wilt
 -- 
 
+CREATE TABLE `paddlenum_pn` (
+  `pn_ID` mediumint(9) unsigned NOT NULL auto_increment,
+  `pn_fr_ID` mediumint(9) unsigned,
+  `pn_Num` mediumint(9) unsigned,
+  `pn_per_ID` mediumint(9) NOT NULL default '0',
+  PRIMARY KEY  (`pn_ID`),
+  UNIQUE KEY `pn_ID` (`pn_ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+CREATE TABLE `fundraiser_fr` (
+  `fr_ID` mediumint(9) unsigned NOT NULL auto_increment,
+  `fr_date` date default NULL,
+  `fr_title` varchar(128) NOT NULL,
+  `fr_description` varchar(2048),
+  `fr_EnteredBy` smallint(5) unsigned NOT NULL default '0',
+  `fr_EnteredDate` date NOT NULL,
+  PRIMARY KEY  (`fr_ID`),
+  UNIQUE KEY `fr_ID` (`fr_ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+CREATE TABLE `donateditem_di` (
+  `di_ID` mediumint(9) unsigned NOT NULL auto_increment,
+  `di_item` varchar(32) NOT NULL,
+  `di_FR_ID` mediumint(9) unsigned NOT NULL,
+  `di_donor_ID` mediumint(9) NOT NULL default '0',
+  `di_buyer_ID` mediumint(9) NOT NULL default '0',
+  `di_multibuy` smallint(1) NOT NULL default '0',
+  `di_title` varchar(128) NOT NULL,
+  `di_description` varchar(2048),
+  `di_sellprice` decimal(8,2) default NULL,
+  `di_estprice` decimal(8,2) default NULL,
+  `di_minimum` decimal(8,2) default NULL,
+  `di_materialvalue` decimal(8,2) default NULL,
+  `di_EnteredBy` smallint(5) unsigned NOT NULL default '0',
+  `di_EnteredDate` date NOT NULL,
+  PRIMARY KEY  (`di_ID`),
+  UNIQUE KEY `di_ID` (`di_ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+CREATE TABLE `multibuy_mb` (
+  `mb_ID` mediumint(9) unsigned NOT NULL auto_increment,
+  `mb_per_ID` mediumint(9) NOT NULL default '0',
+  `mb_item_ID` mediumint(9) NOT NULL default '0',
+  `mb_count` decimal(8,0) default NULL,
+  PRIMARY KEY  (`mb_ID`),
+  UNIQUE KEY `mb_ID` (`mb_ID`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+CREATE TABLE `egive_egv` (
+  `egv_egiveID` varchar(16) character set utf8 NOT NULL,
+  `egv_famID` int(11) NOT NULL,
+  `egv_DateEntered` datetime NOT NULL,
+  `egv_DateLastEdited` datetime NOT NULL,
+  `egv_EnteredBy` smallint(6) NOT NULL default '0',
+  `egv_EditedBy` smallint(6) NOT NULL default '0'
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;

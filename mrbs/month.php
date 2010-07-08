@@ -1,5 +1,5 @@
 <?php
-# $Id: month.php,v 1.1 2007/06/22 23:45:28 amagrace Exp $
+# $Id: month.php,v 1.2 2010/06/07 02:43:55 mikewiltwork Exp $
 
 # mrbs/month.php - Month-at-a-time view
 
@@ -177,7 +177,7 @@ if ($debug_flag)
     echo "<p>DEBUG: month=$month year=$year start=$weekday_start range=$month_start:$month_end\n";
 
 # Used below: localized "all day" text but with non-breaking spaces:
-$all_day = ereg_replace(" ", "&nbsp;", get_vocab("all_day"));
+$all_day = preg_replace("/ /", "&nbsp;", get_vocab("all_day"));
 
 #Get all meetings for this month in the room that we care about
 # row[0] = Start time
@@ -246,8 +246,8 @@ for ($day_num = 1; $day_num<=$days_in_month; $day_num++) {
 	    }
             else
             {
-              $start_str = ereg_replace(" ", "&nbsp;", period_time_string($row[0]));
-              $end_str   = ereg_replace(" ", "&nbsp;", period_time_string($row[1], -1));
+              $start_str = preg_replace("/ /", "&nbsp;", period_time_string($row[0]));
+              $end_str   = preg_replace("/ /", "&nbsp;", period_time_string($row[1], -1));
               switch (cmp3($row[0], $midnight[$day_num]) . cmp3($row[1], $midnight_tonight[$day_num] + 1))
               {
         	case "> < ":         # Starts after midnight, ends before midnight

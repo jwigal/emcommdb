@@ -1,6 +1,6 @@
 <?php
 
-# $Id: config.inc.php,v 1.2 2007/09/25 04:59:46 amagrace Exp $
+# $Id: config.inc.php,v 1.3 2010/06/07 02:43:08 mikewiltwork Exp $
 
 ###########################################################################
 #   MRBS Configuration File
@@ -435,7 +435,8 @@ $typel["I"] = get_vocab("internal");
 # PHP System Configuration - internal use, do not change
 ##########################################
 # Disable magic quoting on database returns:
-set_magic_quotes_runtime(0);
+# mjw this call is deprecated
+# set_magic_quotes_runtime(0);
 
 # Make sure notice errors are not reported, they can break mrbs code:
 error_reporting (E_ALL ^ E_NOTICE);
